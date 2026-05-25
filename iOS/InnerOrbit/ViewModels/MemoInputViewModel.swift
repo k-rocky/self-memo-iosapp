@@ -6,17 +6,19 @@ final class MemoInputViewModel: ObservableObject {
     @Published var memoText: String = ""
     @Published var generatedQuestion: String?
     @Published var state: ViewState = .idle
+    @Published var isSaved: Bool = false
 
     var canSubmit: Bool {
         !memoText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     private let aiService: AIService
-    // QuestionView 実装時に repository を渡して保存を有効化する。
-    // nil の場合 submitAnswer/skipAnswer は保存をスキップする（Phase 0 暫定）。
-    private let repository: MemoLogRepository?
+    private let repository: MemoLogRepository
 
-    init(aiService: AIService, repository: MemoLogRepository? = nil) {
+    init(
+        aiService: AIService,
+        repository: MemoLogRepository = LocalMemoLogRepository()
+    ) {
         self.aiService = aiService
         self.repository = repository
     }
@@ -40,19 +42,14 @@ final class MemoInputViewModel: ObservableObject {
         guard let question = generatedQuestion else { return }
 
         let trimmed = answer.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else {
-            try skipAnswer()
-            return
-        }
-
         let log = MemoLog(
             memo: memoText,
             question: question,
-            answer: trimmed,
-            isAnswerSkipped: false
+            answer: trimmed.isEmpty ? nil : trimmed,
+            isAnswerSkipped: trimmed.isEmpty
         )
-        assert(repository != nil, "submitAnswer called without a repository — wire up repository in MemoInputView init")
-        try repository?.save(log)
+        try repository.save(log)
+        isSaved = true
     }
 
     func skipAnswer() throws {
@@ -64,7 +61,7 @@ final class MemoInputViewModel: ObservableObject {
             answer: nil,
             isAnswerSkipped: true
         )
-        assert(repository != nil, "skipAnswer called without a repository — wire up repository in MemoInputView init")
-        try repository?.save(log)
+        try repository.save(log)
+        isSaved = true
     }
 }

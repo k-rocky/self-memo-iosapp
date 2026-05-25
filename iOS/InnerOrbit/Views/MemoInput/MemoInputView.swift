@@ -5,8 +5,13 @@ struct MemoInputView: View {
     @Environment(\.dismiss) private var dismiss
     @FocusState private var isTextFieldFocused: Bool
 
-    init(aiService: AIService) {
-        _viewModel = StateObject(wrappedValue: MemoInputViewModel(aiService: aiService))
+    init(
+        aiService: AIService,
+        repository: MemoLogRepository = LocalMemoLogRepository()
+    ) {
+        _viewModel = StateObject(
+            wrappedValue: MemoInputViewModel(aiService: aiService, repository: repository)
+        )
     }
 
     var body: some View {
@@ -65,13 +70,18 @@ struct MemoInputView: View {
             .onAppear { isTextFieldFocused = true }
             .navigationDestination(isPresented: Binding(
                 get: { viewModel.state == .success && viewModel.generatedQuestion != nil },
-                set: { _ in }
-            )) {
-                if let question = viewModel.generatedQuestion {
-                    Text(question) // QuestionView は別タスクで実装
+                set: { isPresented in
+                    if !isPresented {
+                        // スワイプバックで戻ったとき state を idle に戻す
+                        viewModel.state = .idle
+                    }
                 }
+            )) {
+                QuestionView(viewModel: viewModel)
+            }
+            .onChange(of: viewModel.isSaved) { _, saved in
+                if saved { dismiss() }
             }
         }
     }
 }
-

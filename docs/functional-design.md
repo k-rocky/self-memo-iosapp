@@ -221,6 +221,7 @@ class WeeklySummaryViewModel: ObservableObject {
 protocol MemoLogRepository {
     func save(_ log: MemoLog) throws
     func fetchAll() throws -> [MemoLog]
+    func fetchRecentLogs(limit: Int) throws -> [MemoLog]  // UC-02 サマリ生成で使用
     func fetchByTag(_ tag: String) throws -> [MemoLog]
     func delete(id: UUID) throws
 }

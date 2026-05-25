@@ -64,6 +64,8 @@ iOS/
     │   ├── CoreData/
     │   │   ├── CoreDataMemoLogRepository.swift   # MemoLogRepositoryProtocol の実装
     │   │   └── CoreDataWeeklySummaryRepository.swift
+    │   ├── Local/
+    │   │   └── LocalMemoLogRepository.swift      # UserDefaults実装（Phase 0）
     │   └── API/
     │       └── BackendAPIService.swift   # AIServiceProtocol の実装（バックエンド経由）
     │

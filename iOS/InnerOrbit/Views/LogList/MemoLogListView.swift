@@ -2,6 +2,9 @@ import SwiftUI
 
 struct MemoLogListView: View {
     @StateObject private var viewModel: MemoLogListViewModel
+    @State private var isShowingMemoInput = false
+
+    let aiService: AIService
 
     private static let dateFormatter: DateFormatter = {
         let f = DateFormatter()
@@ -10,8 +13,9 @@ struct MemoLogListView: View {
         return f
     }()
 
-    init(repository: MemoLogRepository) {
+    init(repository: MemoLogRepository, aiService: AIService) {
         _viewModel = StateObject(wrappedValue: MemoLogListViewModel(repository: repository))
+        self.aiService = aiService
     }
 
     var body: some View {
@@ -28,13 +32,25 @@ struct MemoLogListView: View {
         }
         .navigationTitle("ログ一覧")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button(action: { isShowingMemoInput = true }) {
+                    Image(systemName: "square.and.pencil")
+                }
+            }
+        }
         .onAppear { viewModel.loadLogs() }
+        .sheet(isPresented: $isShowingMemoInput, onDismiss: {
+            viewModel.loadLogs()
+        }) {
+            MemoInputView(aiService: aiService)
+        }
         .alert("エラー", isPresented: Binding(
             get: {
                 if case .error = viewModel.state { return true }
                 return false
             },
-            set: { _ in viewModel.state = .idle }
+            set: { _ in viewModel.clearError() }
         )) {
             Button("OK", role: .cancel) {}
         } message: {
@@ -69,6 +85,10 @@ struct MemoLogListView: View {
                     Text(memoPreview(log.memo))
                         .font(.body)
                         .lineLimit(2)
+                    Text(questionPreview(log.question))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
                 }
                 .padding(.vertical, 4)
             }
@@ -85,5 +105,12 @@ struct MemoLogListView: View {
             return String(memo.prefix(50)) + "…"
         }
         return memo
+    }
+
+    private func questionPreview(_ question: String) -> String {
+        if question.count > 50 {
+            return "Q: " + String(question.prefix(50)) + "…"
+        }
+        return "Q: " + question
     }
 }

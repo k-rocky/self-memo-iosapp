@@ -28,4 +28,10 @@ final class MemoLogListViewModel: ObservableObject {
             state = .error(error)
         }
     }
+
+    func clearError() {
+        if case .error = state {
+            state = .idle
+        }
+    }
 }
